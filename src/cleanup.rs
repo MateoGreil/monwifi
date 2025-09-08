@@ -9,11 +9,9 @@ pub struct WifiCleanupGuard {
 impl Drop for WifiCleanupGuard {
     fn drop(&mut self) {
         println!("Stopping monitor mode on {}...", self.monitor_interface);
-        let _ = Command::new("sudo")
-            .arg("airmon-ng")
-            .arg("stop")
-            .arg(&self.monitor_interface)
-            .status();
+        if !commands::run_sudo_command("airmon-ng", &["stop", &self.monitor_interface]) {
+            eprintln!("Error: Failed to stop {}", self.monitor_interface);
+        }
 
         println!("Re-Enabling NetworkManager");
         if !commands::run_sudo_command("systemctl", &["restart", "NetworkManager"]) {
