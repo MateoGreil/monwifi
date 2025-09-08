@@ -18,7 +18,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let required_tools = ["NetworkManager", "airmon-ng", "airodump-ng", "aircrack-ng"];
+    let required_tools = ["NetworkManager", "airmon-ng", "airodump-ng", "aircrack-ng", "iwlist", "nmcli"];
     let interface = match wifi::get_wifi_interface() {
         Some(iface) => iface,
         None => {
@@ -36,20 +36,27 @@ fn main() {
     for tool in required_tools.iter() {
         if !commands::is_tool_installed(tool) {
             eprintln!("Error: {} is not installed. Please install it.", tool);
-            std::process::exit(1);
+            return;
         }
     }
 
+    let bssid = wifi::find_bssid(&interface, &args.essid);
+    if bssid.is_none() {
+        eprintln!("Error: BSSID not found.");
+        return;
+    }
+    println!("BSSID Found {:?}!", bssid);
+    return;
+
+
     if !commands::run_sudo_command("airmon-ng", &["check", "kill"]) {
         eprintln!("Error: Failed to run 'sudo airmon-ng check kill'");
-        std::process::exit(1);
+        return;
     }
 
     println!("Starting monitor mode on {}...", monitor_interface);
     if !commands::run_sudo_command("airmon-ng", &["start", &interface]) {
         eprintln!("Error: Failed to start monitor mode on {}", interface);
-        std::process::exit(1);
+        return;
     }
-
-    println!("Doing. ESSID: {}", args.essid);
 }
